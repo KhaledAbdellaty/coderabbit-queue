@@ -1,0 +1,9 @@
+{
+  "name": "coderabbit-queue",
+  "version": "0.1.0",
+  "description": "Run pull requests through CodeRabbit under its rate limits: detect plan, allowance and timezone; queue full reviews one at a time; and merge only when every review on the head is clean.",
+  "author": {
+    "name": "The Co-Founder Studio"
+  },
+  "keywords": ["coderabbit", "code-review", "pull-requests", "github", "rate-limit", "merge"]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "cofounder-studio-coderabbit",
+  "description": "CodeRabbit review-queue workflow for Claude Code",
+  "owner": {
+    "name": "The Co-Founder Studio"
+  },
+  "plugins": [
+    {
+      "name": "coderabbit-queue",
+      "source": "./plugins/coderabbit-queue",
+      "description": "Queue CodeRabbit full reviews under the rate limit and merge only on a truly clean approval"
+    }
+  ]
+}
