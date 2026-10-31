@@ -74,11 +74,11 @@ flowchart LR
 In a terminal:
 
 ```bash
-claude plugin marketplace add TheCoFounderStudio/coderabbit-queue
+claude plugin marketplace add KhaledAbdellaty/coderabbit-queue
 claude plugin install coderabbit-queue@cofounder-studio-coderabbit
 ```
 
-Or inside Claude Code: `/plugin marketplace add TheCoFounderStudio/coderabbit-queue`, then `/plugin install coderabbit-queue@cofounder-studio-coderabbit`.
+Or inside Claude Code: `/plugin marketplace add KhaledAbdellaty/coderabbit-queue`, then `/plugin install coderabbit-queue@cofounder-studio-coderabbit`.
 
 > The repository is private: you need read access to it, and `gh`/git must be authenticated.
 
