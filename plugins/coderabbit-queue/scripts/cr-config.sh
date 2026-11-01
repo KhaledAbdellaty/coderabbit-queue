@@ -8,6 +8,8 @@
 #   cr-config.sh set-branches staging,main    review PRs into these base branches (exact names)
 #   cr-config.sh set-profile chill            quiet | chill | assertive
 #   cr-config.sh set-incremental off          on | off  (off = no review on every push; ask with "full review")
+#   cr-config.sh set-approvals on             on | off  (on = CodeRabbit requests changes and approves;
+#                                              pr-gate.sh needs an APPROVED verdict, so keep it on)
 #   cr-config.sh add-filter '!**/*.lock'      exclude a path glob (a glob without '!' makes an
 #                                              allow-list; refused unless --allow-list)
 #   cr-config.sh remove-filter '!**/*.lock'
@@ -58,6 +60,10 @@ def render():
         f"    drafts: {str(rc['drafts']).lower()}",
         "    base_branches:",
         *[f"      - {q('^' + re.escape(b) + '$')}" for b in rc["base_branches"]],
+        # A config file overrides the web settings, and approvals default off there:
+        # without this, CodeRabbit never approves and pr-gate.sh can't pass.
+        "  auto_approvals:",
+        f"    enabled: {str(rc.get('auto_approvals', True)).lower()}",
     ]
     if rc["path_filters"]:
         out += ["  path_filters:", *[f"    - {q(f)}" for f in rc["path_filters"]]]
@@ -81,6 +87,11 @@ elif cmd == "set-profile":
     if args[0] not in ("quiet", "chill", "assertive"):
         sys.exit("profile must be quiet, chill or assertive")
     rc["profile"] = args[0]
+elif cmd == "set-approvals":
+    need(1)
+    if args[0] not in ("on", "off"):
+        sys.exit("set-approvals takes on or off")
+    rc["auto_approvals"] = args[0] == "on"
 elif cmd == "set-incremental":
     need(1)
     if args[0] not in ("on", "off"):

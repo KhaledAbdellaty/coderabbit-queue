@@ -167,6 +167,7 @@ Check any review's **Run configuration**. If it says *"No configuration file fro
 ```bash
 cr-config.sh set-branches staging,main            # base branches (written as ^name$, the keys are unanchored regexes)
 cr-config.sh set-incremental off                  # a push no longer spends a review
+cr-config.sh set-approvals on                    # CodeRabbit requests changes and approves (pr-gate.sh needs it; default on)
 cr-config.sh add-filter '!**/*.g.dart'            # skip generated files (a glob without '!' turns filters into an allow-list; refused unless --allow-list)
 cr-config.sh add-instruction 'backend/src/accounting/**' 'Every journal entry must balance.'
 cr-config.sh render --write                       # then commit it in a PR
