@@ -8,7 +8,8 @@
 #   cr-config.sh set-branches staging,main    review PRs into these base branches (exact names)
 #   cr-config.sh set-profile chill            quiet | chill | assertive
 #   cr-config.sh set-incremental off          on | off  (off = no review on every push; ask with "full review")
-#   cr-config.sh add-filter '!**/*.lock'      a path filter glob ('!' excludes)
+#   cr-config.sh add-filter '!**/*.lock'      exclude a path glob (a glob without '!' makes an
+#                                              allow-list; refused unless --allow-list)
 #   cr-config.sh remove-filter '!**/*.lock'
 #   cr-config.sh add-instruction 'backend/**' 'Every JE must balance.'   (replaces an existing path)
 #   cr-config.sh remove-instruction 'backend/**'
@@ -87,6 +88,11 @@ elif cmd == "set-incremental":
     rc["auto_incremental_review"] = args[0] == "on"
 elif cmd == "add-filter":
     need(1)
+    # A pattern without '!' turns path_filters into an allow-list: CodeRabbit then
+    # reviews ONLY matching files ("No files to review" on everything else).
+    if not args[0].startswith("!") and "--allow-list" not in args[1:]:
+        sys.exit("refused: '%s' has no '!', so CodeRabbit would review ONLY files matching it. "
+                 "Use '!glob' to exclude, or pass --allow-list if you really mean that." % args[0])
     if args[0] not in rc["path_filters"]:
         rc["path_filters"].append(args[0])
 elif cmd == "remove-filter":
