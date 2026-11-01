@@ -17,6 +17,17 @@ crq_require_config
 R=$(crq_repo); N=$1; BOT=$(crq_bot_re)
 OWNER=${R%/*}; NAME=${R#*/}
 blocked=()
+# Fail closed: a GitHub call that still fails after retries must never read as
+# "nothing found". Calls run in $(...) subshells, so the failure is a flag file.
+GH_FAILED=$(mktemp); trap 'rm -f "$GH_FAILED"' EXIT
+gh() {
+  local out i
+  for i in 1 2 3 4; do
+    if out=$(command gh "$@" 2>/dev/null); then printf '%s\n' "$out"; return 0; fi
+    sleep 10
+  done
+  echo "gh $1 $2" >> "$GH_FAILED"; return 1
+}
 
 HEAD=$(gh pr view "$N" -R "$R" --json headRefOid -q .headRefOid)
 STATE=$(gh pr view "$N" -R "$R" --json state -q .state)
@@ -60,6 +71,7 @@ for _ in 1 2 3 4 5 6; do
 done
 [ "$STATE" != OPEN ] || [ "$M" = MERGEABLE ] || blocked+=("mergeable=$M (resolve conflicts with the base first)")
 
+[ -s "$GH_FAILED" ] && blocked+=("GitHub calls failed after retries ($(paste -sd ', ' "$GH_FAILED")): re-run the gate")
 if [ ${#blocked[@]} -eq 0 ]; then
   echo "CLEAN: merge with"
   echo "  gh api -X PUT repos/$R/pulls/$N/merge -f merge_method=squash -f sha=$HEAD"
