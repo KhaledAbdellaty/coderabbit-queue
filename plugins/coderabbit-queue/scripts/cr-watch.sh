@@ -20,7 +20,7 @@ for _ in $(seq 1 $((43200 / INTERVAL))); do
       -q "[.[]|select((.user.login|test(\"$BOT\")) and .submitted_at>\"$SINCE\" and (.state==\"APPROVED\" or .state==\"CHANGES_REQUESTED\"))]|last|select(.)|.state+\" \"+.commit_id[0:8]" 2>/dev/null)
     [ -n "$r" ] && { echo "#$p $r"; found=1; }
     d=$(gh api "repos/$R/issues/$p/comments" --paginate \
-      -q "[.[]|select((.user.login|test(\"$BOT\")) and .updated_at>\"$SINCE\" and (.body|test(\"Full review finished\")))]|length" 2>/dev/null)
+      -q "[.[]|select((.user.login|test(\"$BOT\")) and .updated_at>\"$SINCE\" and (.body|test(\"Full review finished\")))]|length" 2>/dev/null | awk "{s+=\$1} END{print s+0}")
     [ "${d:-0}" -gt 0 ] 2>/dev/null && [ -z "$r" ] && { echo "#$p FULL_REVIEW_DONE"; found=1; }
   done
   [ "$found" = 1 ] && exit 0
