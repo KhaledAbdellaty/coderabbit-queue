@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Wait for CodeRabbit's next verdict (APPROVED or CHANGES_REQUESTED) on any of
 # the given PRs, then print "#<pr> <STATE> <sha8>" lines and exit 0.
-# A COMMENTED review is not a verdict: read it with pr-gate.sh.
+# A COMMENTED review is not a verdict: read it with pr-gate.sh. A clean full
+# review can end COMMENTED with no approval; that prints "#<pr> FULL_REVIEW_DONE".
 # usage: cr-watch.sh [--since <utc-iso>] <pr> [<pr>...]
 # Run it in the background; it exits on the first verdict, or prints "timeout" after ~12 h.
 set -u
@@ -18,6 +19,9 @@ for _ in $(seq 1 $((43200 / INTERVAL))); do
     r=$(gh api "repos/$R/pulls/$p/reviews" --paginate \
       -q "[.[]|select((.user.login|test(\"$BOT\")) and .submitted_at>\"$SINCE\" and (.state==\"APPROVED\" or .state==\"CHANGES_REQUESTED\"))]|last|select(.)|.state+\" \"+.commit_id[0:8]" 2>/dev/null)
     [ -n "$r" ] && { echo "#$p $r"; found=1; }
+    d=$(gh api "repos/$R/issues/$p/comments" --paginate \
+      -q "[.[]|select((.user.login|test(\"$BOT\")) and .updated_at>\"$SINCE\" and (.body|test(\"Full review finished\")))]|length" 2>/dev/null)
+    [ "${d:-0}" -gt 0 ] 2>/dev/null && [ -z "$r" ] && { echo "#$p FULL_REVIEW_DONE"; found=1; }
   done
   [ "$found" = 1 ] && exit 0
   sleep "$INTERVAL"
