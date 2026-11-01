@@ -15,6 +15,8 @@ crq_require_config
 R=$(crq_repo); N=$1; BOT=$(crq_bot_re)
 
 for _ in 1 2 3 4 5 6; do
+  S=$(gh pr view "$N" -R "$R" --json state -q .state 2>/dev/null)
+  [ "$S" = MERGED ] || [ "$S" = CLOSED ] && { echo "SKIP #$N ($S)"; exit 3; }
   M=$(gh pr view "$N" -R "$R" --json mergeable -q .mergeable 2>/dev/null)
   [ -n "$M" ] && [ "$M" != UNKNOWN ] && break
   sleep 10
