@@ -5,9 +5,15 @@
 CRQ_HOME="${CRQ_HOME:-$HOME/.config/coderabbit-queue}"
 mkdir -p "$CRQ_HOME"
 
-# owner/repo: $CRQ_REPO, else the repo of the current directory.
+# owner/repo: $CRQ_REPO, else the current directory's GitHub origin (read locally,
+# so a GitHub network blip can't make the config "disappear"), else gh.
 crq_repo() {
   if [ -n "${CRQ_REPO:-}" ]; then echo "$CRQ_REPO"; return; fi
+  local u
+  u=$(git remote get-url origin 2>/dev/null)
+  case "$u" in
+    *github.com[:/]*) u=${u#*github.com[:/]}; echo "${u%.git}"; return ;;
+  esac
   gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null
 }
 
