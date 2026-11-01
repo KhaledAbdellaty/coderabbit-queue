@@ -4,7 +4,7 @@
 
 ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A2BE2)
 ![Shell](https://img.shields.io/badge/shell-bash-4EAA25)
-![Status](https://img.shields.io/badge/status-0.1.0-blue)
+![Status](https://img.shields.io/badge/status-0.2.0-blue)
 
 ---
 
@@ -19,6 +19,8 @@
 - [The three skills](#the-three-skills)
 - [Scripts reference](#scripts-reference)
 - [Configuration](#configuration)
+- [Repo config: `.coderabbit.yaml`](#repo-config-coderabbityaml)
+- [Measuring](#measuring)
 - [Plans, rate limits and time zones](#plans-rate-limits-and-time-zones)
 - [The rules it enforces (and why)](#the-rules-it-enforces-and-why)
 - [Troubleshooting](#troubleshooting)
@@ -127,6 +129,8 @@ All scripts live in `plugins/coderabbit-queue/scripts/`, read the repo from the 
 | `cr-serial.sh` | `<pr> [<pr>...]` — the queue (per-repo `flock`) | 0 |
 | `cr-watch.sh` | `[--since UTC] <pr>...` — exits on the first verdict | 0 verdict · prints `timeout` after ~12 h |
 | `pr-gate.sh` | `<pr>` — pre-merge gate | 0 CLEAN · 1 BLOCKED |
+| `cr-config.sh` | `show · set-branches · set-profile · set-incremental · add/remove-filter · add/remove-instruction · render [--write]` — manage `.coderabbit.yaml` | 0 |
+| `cr-stats.sh` | `[--days N] [--base BRANCH]` — measure review spend and outcomes | 0 |
 | `lib.sh` | sourced helpers (config, UTC/local time, log) | — |
 
 `--probe <pr>` posts `@coderabbitai rate limit` on that PR to read the live allowance — it **writes a comment**, so it's off by default.
@@ -155,6 +159,41 @@ All scripts live in `plugins/coderabbit-queue/scripts/`, read the repo from the 
 ```
 
 Edit it by hand to tune `slot_seconds` or `watch_interval_seconds`, or re-run setup. The queue log sits next to it as `<owner>__<repo>.log`.
+
+## Repo config: `.coderabbit.yaml`
+
+Check any review's **Run configuration**. If it says *"No configuration file from this repository applied"* and *Layers: Repository UI*, your settings live only in the CodeRabbit dashboard, unversioned. `cr-config.sh` keeps the settings in the plugin config and renders a whole, valid `.coderabbit.yaml`:
+
+```bash
+cr-config.sh set-branches staging,main            # base branches (written as ^name$, the keys are unanchored regexes)
+cr-config.sh set-incremental off                  # a push no longer spends a review
+cr-config.sh add-filter '!**/*.g.dart'            # skip generated files
+cr-config.sh add-instruction 'backend/src/accounting/**' 'Every journal entry must balance.'
+cr-config.sh render --write                       # then commit it in a PR
+```
+
+After it merges, the *Run configuration* shows **File: .coderabbit.yaml** with a branch and commit. That's how to confirm each repo or branch really uses it.
+
+**The biggest lever is `auto_incremental_review: false`.** CodeRabbit counts every reviewed push, so automatic reviews on fix pushes quietly use the allowance and trigger the fair-usage step-down.
+
+## Measuring
+
+```bash
+cr-stats.sh --days 7 --base staging
+```
+
+```
+  reviews            74        # review runs (thread replies excluded)
+  prs                40
+  rounds/PR          1.85      # goal: 1-2
+  findings           115
+  rate-limited       193       # wasted requests
+  failed             1
+  merged             57
+  median h to merge  9.7
+```
+
+Run it before and after a config change, per base branch, or in each repo (`CRQ_REPO=owner/repo`) to compare.
 
 ## Plans, rate limits and time zones
 

@@ -41,6 +41,31 @@ CodeRabbit has **no public API for plan or seats**. The script reads CodeRabbit'
 
 All logic is in **UTC**; the configured timezone is only used to show times ("next slot 23:47 EET"). Never compare local clock times.
 
+## Repo review config (`.coderabbit.yaml`): editable by command
+
+Without a `.coderabbit.yaml`, each review's *Run configuration* says "No configuration file from this repository applied", and settings live only in the CodeRabbit dashboard. Manage the file with:
+
+```bash
+S="${CLAUDE_PLUGIN_ROOT}/scripts"
+bash $S/cr-config.sh show
+bash $S/cr-config.sh set-branches staging,main          # exact base branches
+bash $S/cr-config.sh set-incremental off                # don't spend a review on every push
+bash $S/cr-config.sh add-filter '!**/*.lock'            # path filters ('!' excludes)
+bash $S/cr-config.sh add-instruction 'src/billing/**' 'Every invoice total must ...'
+bash $S/cr-config.sh remove-instruction 'src/billing/**'
+bash $S/cr-config.sh render --write                     # regenerate .coderabbit.yaml, then open a PR
+```
+
+**Recommend `set-incremental off`** when the queue is used: otherwise every push spends a review and pushes the plan into its fair-usage step-down.
+
+## Measure
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/cr-stats.sh" --days 7 [--base BRANCH]
+```
+
+It reports reviews spent, PRs, rounds/PR, findings, rate-limited and failed requests, merged PRs and median hours to merge. Compare before and after a config change, or across repos and branches.
+
 ## After running
 
 Report to the user: plan, reviews per hour and its source, remaining included reviews, any seat warning, and the timezone. If the allowance is 1/hour, mention that CodeRabbit's usage-based billing can lift it (an owner cost decision — don't enable anything yourself).
