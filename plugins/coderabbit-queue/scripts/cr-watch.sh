@@ -19,8 +19,10 @@ for _ in $(seq 1 $((43200 / INTERVAL))); do
     r=$(gh api "repos/$R/pulls/$p/reviews" --paginate \
       -q "[.[]|select((.user.login|test(\"$BOT\")) and .submitted_at>\"$SINCE\" and (.state==\"APPROVED\" or .state==\"CHANGES_REQUESTED\"))]|last|select(.)|.state+\" \"+.commit_id[0:8]" 2>/dev/null)
     [ -n "$r" ] && { echo "#$p $r"; found=1; }
+    # only replies created after the head commit: CodeRabbit edits older round replies too
+    H=$(gh pr view "$p" -R "$R" --json commits -q '.commits[-1].committedDate' 2>/dev/null)
     d=$(gh api "repos/$R/issues/$p/comments" --paginate \
-      -q "[.[]|select((.user.login|test(\"$BOT\")) and .updated_at>\"$SINCE\" and (.body|test(\"Full review finished\")))]|length" 2>/dev/null | awk "{s+=\$1} END{print s+0}")
+      -q "[.[]|select((.user.login|test(\"$BOT\")) and .updated_at>\"$SINCE\" and .created_at>\"${H:-$SINCE}\" and (.body|test(\"Full review finished\")))]|length" 2>/dev/null | awk "{s+=\$1} END{print s+0}")
     [ "${d:-0}" -gt 0 ] 2>/dev/null && [ -z "$r" ] && { echo "#$p FULL_REVIEW_DONE"; found=1; }
   done
   [ "$found" = 1 ] && exit 0
