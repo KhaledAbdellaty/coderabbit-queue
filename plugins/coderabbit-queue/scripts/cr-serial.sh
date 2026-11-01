@@ -16,7 +16,16 @@ crq_require_config
 R=$(crq_repo)
 exec 9>"$CRQ_HOME/$(echo "$R" | sed 's#/#__#').lock"
 flock 9
-is_open() { [ "$(gh pr view "$1" -R "$R" --json state -q .state 2>/dev/null)" = OPEN ]; }
+# A failed gh call is not "closed": retry, and only MERGED/CLOSED counts as not open.
+is_open() {
+  local s i
+  for i in 1 2 3 4 5; do
+    s=$(gh pr view "$1" -R "$R" --json state -q .state 2>/dev/null)
+    [ -n "$s" ] && break
+    sleep 15
+  done
+  [ "$s" != MERGED ] && [ "$s" != CLOSED ]
+}
 for p in "$@"; do
   rc=1
   until ! is_open "$p"; do
