@@ -35,7 +35,7 @@ esac
 
 while IFS=$'\t' read -r at state body; do
   [ -n "$at" ] || continue
-  notes=$(printf '%s' "$body" | grep -oE "Actionable comments posted: [1-9][0-9]*|Nitpick comments \([1-9][0-9]*\)|Follow-up Comments|Outside diff range comments \([1-9][0-9]*\)" | sort -u | paste -sd ',' -)
+  notes=$(printf '%s' "$body" | grep -oE "Actionable comments posted: [1-9][0-9]*|Nitpick comments:? \(?[1-9][0-9]*\)?|Follow-up Comments|Outside diff range comments:? \(?[1-9][0-9]*\)?" | sort -u | paste -sd ',' -)
   echo "  review $(crq_local "$at") $state ${notes:-(no notes)}"
   [ -n "$notes" ] && blocked+=("$state review at $(crq_local "$at") has: $notes")
 done <<<"$REVIEWS"
