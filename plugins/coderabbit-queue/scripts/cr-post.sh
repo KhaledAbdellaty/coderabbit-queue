@@ -26,6 +26,19 @@ if [ "$M" = CONFLICTING ]; then
   exit 3
 fi
 
+# CodeRabbit already reviewed this exact commit (auto-review on open, or an earlier
+# request): another full review would only spend a slot. Re-queue after the next push.
+HEAD_SHA=$(gh pr view "$N" -R "$R" --json headRefOid -q .headRefOid 2>/dev/null)
+if [ -n "$HEAD_SHA" ]; then
+  DONE=$(gh api --paginate "repos/$R/pulls/$N/reviews" \
+    -q "[.[]|select((.user.login|test(\"$BOT\")) and .commit_id==\"$HEAD_SHA\" and (.body|length)>0)]|length" 2>/dev/null \
+    | awk '{s+=$1} END{print s+0}')
+  if [ "${DONE:-0}" -gt 0 ]; then
+    crq_log "SKIP #$N: CodeRabbit already reviewed head ${HEAD_SHA:0:8}; push a fix, then re-queue"
+    exit 3
+  fi
+fi
+
 replies() {
   gh api --paginate "repos/$R/issues/$N/comments?per_page=100" \
     --jq ".[]|select(.user.login|test(\"$BOT\"))|select(.created_at>\"$1\")|.body" 2>/dev/null

@@ -25,7 +25,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/cr-serial.sh" 482 481 485
 - Posts `@coderabbitai full review` (never plain `review`: it skips already-reviewed commits).
 - Confirms CodeRabbit really started: it re-reads the reply twice, minutes apart, because CodeRabbit edits "review triggered" into "rate limited" or "Review failed".
 - Rate limited → waits exactly as long as CodeRabbit says, then retries. "Review failed" → retries after 5 min.
-- Skips PRs merged/closed while waiting; **holds and skips** PRs that conflict (log line `SKIP #N (held: conflicts…)`) — re-queue them after the conflict is resolved.
+- Skips PRs merged/closed while waiting, and PRs whose current commit CodeRabbit already reviewed (e.g. the automatic review when a PR opens); **holds and skips** PRs that conflict (log line `SKIP #N (held: conflicts…)`) — re-queue them after the conflict is resolved.
 - Log: `~/.config/coderabbit-queue/<owner>__<repo>.log`, times in the configured timezone.
 
 Re-queue a PR after a fix push simply by running `cr-serial.sh <pr>` again. Don't start a second queue job for a PR that is already queued.
